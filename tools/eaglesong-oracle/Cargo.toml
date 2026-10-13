@@ -1,0 +1,11 @@
+[package]
+name = "eaglesong-oracle"
+version = "0.1.0"
+edition = "2021"
+description = "Independent Eaglesong oracle: hashes hex inputs from stdin using the official nervosnetwork/eaglesong crate (vendored, pinned commit)."
+license = "MIT"
+
+[dependencies]
+eaglesong = { path = "../../vendor/eaglesong" }
+
+[workspace]

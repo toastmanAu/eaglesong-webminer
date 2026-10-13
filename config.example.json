@@ -1,0 +1,17 @@
+{
+  "bridge": {
+    "listenHost": "127.0.0.1",
+    "port": 8788,
+    "allowedOrigins": ["http://localhost:5173", "http://127.0.0.1:5173"],
+    "maxConnections": 50,
+    "maxConnectionsPerIp": 4,
+    "maxInboundFrameBytes": 16384,
+    "perSessionSubmissionsPerMinute": 120,
+    "maxJobsPerSession": 32,
+    "submitTimeoutMs": 10000,
+    "statusIntervalMs": 1000
+  },
+  "stratum": { "host": "127.0.0.1", "port": 3334, "profile": "solo-proxy-v1" },
+  "mining": { "mode": "solo", "targetShareSeconds": 30, "webProfileEnabled": false },
+  "payout": { "displayConfiguredAddressOnly": true, "displayAddress": null }
+}

@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <!-- INLINE_CSP -->
+  <title>EagleSong WebMiner</title>
+  <meta name="description" content="Opt-in Nervos CKB Eaglesong browser lottery miner. Nothing runs until you press Start.">
+  <style>/* INLINE_CSS */</style>
+</head>
+<body>
+  <a class="skip" href="#controls">Skip to mining controls</a>
+  <header class="top">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <h1>EagleSong WebMiner <span class="muted">/ CKB</span></h1>
+    </div>
+    <div class="top-badges" role="status" aria-live="polite">
+      <span class="badge" id="badge-mode" title="Mining mode comes from the server configuration">Solo</span>
+      <span class="badge badge-neutral" id="badge-backend">Backend: —</span>
+      <span class="badge badge-neutral" id="badge-conn">Disconnected</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="card card-accent" aria-labelledby="h-state">
+      <h2 id="h-state" class="visually-hidden">Mining state</h2>
+      <div class="state-row">
+        <div>
+          <div class="state-label" id="state-label" data-state="idle">Idle</div>
+          <div class="state-detail muted" id="state-detail">Nothing is running. Mining starts only when you press Start.</div>
+        </div>
+        <div class="rate-big"><span id="rate-live">0</span> <span class="unit">H/s</span></div>
+      </div>
+      <div class="controls" id="controls">
+        <button class="btn btn-primary" id="btn-start" type="button">Start mining</button>
+        <button class="btn btn-secondary" id="btn-stop" type="button" disabled>Stop mining</button>
+      </div>
+      <p class="lottery-note">
+        Browser mining is a <strong>lottery</strong>. Finding a CKB block from a phone or laptop is extremely unlikely.
+        Low-difficulty “local shares” prove your hashing works; they are not payouts.
+      </p>
+    </section>
+
+    <section class="card" aria-labelledby="h-payout">
+      <h2 id="h-payout">Payout</h2>
+      <dl class="kv">
+        <dt>Rewards go to</dt>
+        <dd><code id="payout-address" class="addr">—</code> <button class="btn btn-ghost btn-sm" id="btn-copy-addr" type="button" aria-label="Copy payout address">Copy</button></dd>
+        <dt>Source</dt>
+        <dd id="payout-source" class="muted">Server-configured block assembler address. You cannot change it here; a typed address would not redirect rewards.</dd>
+        <dt>Verified on node</dt>
+        <dd><span class="badge badge-neutral" id="payout-verified">unverified</span></dd>
+      </dl>
+    </section>
+
+    <section class="card" aria-labelledby="h-conn">
+      <h2 id="h-conn">Connection</h2>
+      <dl class="kv kv-grid">
+        <dt>Bridge</dt><dd><code id="bridge-url">—</code></dd>
+        <dt>Session</dt><dd><code id="session-id">—</code></dd>
+        <dt>Height</dt><dd id="job-height">—</dd>
+        <dt>Job</dt><dd><code id="job-id">—</code> <span class="muted" id="job-gen"></span></dd>
+        <dt>Job age</dt><dd id="job-age">—</dd>
+        <dt>RTT</dt><dd id="rtt">—</dd>
+        <dt>Share difficulty</dt><dd id="share-diff">—</dd>
+        <dt>Network target</dt><dd><code id="net-target" class="hash">—</code></dd>
+      </dl>
+    </section>
+
+    <section class="card" aria-labelledby="h-settings">
+      <h2 id="h-settings">Settings</h2>
+      <div class="field">
+        <label for="workers">CPU workers: <output id="workers-out" for="workers">1</output></label>
+        <input type="range" id="workers" min="1" max="8" value="1" step="1">
+        <div class="help muted" id="workers-help">Hardware threads detected: —</div>
+      </div>
+      <div class="field">
+        <label for="intensity">Intensity: <output id="intensity-out" for="intensity">100</output>%</label>
+        <input type="range" id="intensity" min="10" max="100" value="100" step="10">
+        <div class="help muted">Below 100% the workers rest between batches instead of spinning.</div>
+      </div>
+      <div class="field">
+        <label for="backend">Backend</label>
+        <select id="backend">
+          <option value="cpu-js">CPU (JavaScript)</option>
+          <option value="cpu-wasm" disabled>CPU (WebAssembly) — not yet proven, disabled</option>
+          <option value="webgpu" disabled>WebGPU — not yet proven, disabled</option>
+        </select>
+      </div>
+      <div class="field field-check">
+        <input type="checkbox" id="keep-background">
+        <label for="keep-background">Keep hashing when this tab is hidden <span class="muted">(default: pause; the browser may throttle anyway)</span></label>
+      </div>
+      <p class="help warn" id="device-warning" hidden>This looks like a phone or tablet. Mining heats the device and drains the battery; one worker at reduced intensity is recommended.</p>
+    </section>
+
+    <section class="card" aria-labelledby="h-stats">
+      <h2 id="h-stats">Statistics</h2>
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-v" id="st-total">0</div><div class="stat-k">hashes measured</div></div>
+        <div class="stat"><div class="stat-v" id="st-5s">0 H/s</div><div class="stat-k">5 s rate</div></div>
+        <div class="stat"><div class="stat-v" id="st-30s">0 H/s</div><div class="stat-k">30 s rate</div></div>
+        <div class="stat"><div class="stat-v" id="st-peak">0 H/s</div><div class="stat-k">peak (5 s)</div></div>
+        <div class="stat"><div class="stat-v" id="st-uptime">0 s</div><div class="stat-k">mining uptime</div></div>
+        <div class="stat"><div class="stat-v" id="st-best-diff">—</div><div class="stat-k">best hash difficulty</div></div>
+      </div>
+      <dl class="kv">
+        <dt>Best hash</dt><dd><code id="st-best-hash" class="hash">—</code></dd>
+        <dt>Last nonce</dt><dd><code id="st-last-nonce" class="hash">—</code></dd>
+      </dl>
+      <h3>Shares</h3>
+      <ul class="shares" id="share-counters" aria-live="polite">
+        <li data-cls="local_accepted"><span class="badge badge-ok">local accepted</span> <b>0</b></li>
+        <li data-cls="upstream_accepted"><span class="badge badge-ok">upstream accepted</span> <b>0</b></li>
+        <li data-cls="block_candidate"><span class="badge badge-gold">block candidate</span> <b>0</b></li>
+        <li data-cls="node_submitted"><span class="badge badge-gold">node submitted</span> <b>0</b></li>
+        <li data-cls="node_accepted"><span class="badge badge-gold">node accepted</span> <b>0</b></li>
+        <li data-cls="block_confirmed"><span class="badge badge-gold">block confirmed</span> <b>0</b></li>
+        <li data-cls="rejected_low_diff"><span class="badge badge-warn">rejected: low diff</span> <b>0</b></li>
+        <li data-cls="rejected_duplicate"><span class="badge badge-warn">rejected: duplicate</span> <b>0</b></li>
+        <li data-cls="rejected_stale"><span class="badge badge-warn">rejected: stale</span> <b>0</b></li>
+        <li data-cls="rejected_invalid"><span class="badge badge-err">rejected: invalid</span> <b>0</b></li>
+        <li data-cls="upstream_error"><span class="badge badge-err">upstream error</span> <b>0</b></li>
+      </ul>
+      <p class="help muted">“Local accepted” = the server recomputed your hash and it met the share target. Only “block confirmed” means a block on the chain.</p>
+    </section>
+
+    <section class="card" aria-labelledby="h-odds">
+      <h2 id="h-odds">Odds</h2>
+      <dl class="kv kv-grid">
+        <dt>P(block) per hash</dt><dd id="odds-p">N/A</dd>
+        <dt>Mean time to a block</dt><dd id="odds-mean">N/A</dd>
+        <dt>Chance in next hour</dt><dd id="odds-hour">N/A</dd>
+        <dt>Chance in next 24 h</dt><dd id="odds-day">N/A</dd>
+      </dl>
+      <p class="help muted" id="odds-note">Computed from the network target of the current job and your measured 30 s hash rate.</p>
+    </section>
+
+    <section class="card" aria-labelledby="h-log">
+      <div class="row-between">
+        <h2 id="h-log">Live log</h2>
+        <div class="row">
+          <label class="field-check small"><input type="checkbox" id="redact" checked> redact ids</label>
+          <button class="btn btn-ghost btn-sm" id="btn-copy-diag" type="button">Copy diagnostic report</button>
+        </div>
+      </div>
+      <ol class="log" id="log" aria-live="off"></ol>
+    </section>
+
+    <section class="card" aria-labelledby="h-diag">
+      <h2 id="h-diag">Capabilities &amp; diagnostics</h2>
+      <dl class="kv kv-grid" id="caps">
+        <dt>Web Workers</dt><dd id="cap-workers">—</dd>
+        <dt>BigInt</dt><dd id="cap-bigint">—</dd>
+        <dt>WebAssembly</dt><dd id="cap-wasm">—</dd>
+        <dt>WebGPU</dt><dd id="cap-webgpu">—</dd>
+        <dt>Secure context</dt><dd id="cap-secure">—</dd>
+        <dt>Eaglesong self-test</dt><dd id="cap-selftest">not run</dd>
+        <dt>Protocol</dt><dd><code id="diag-protocol">—</code></dd>
+        <dt>Build</dt><dd><code id="diag-build">—</code></dd>
+      </dl>
+    </section>
+  </main>
+
+  <footer class="foot muted">
+    Eaglesong reference © Nervos Foundation (MIT) · C port lineage NerdMiner_CKB © Bitmaker (MIT) · ckb-stratum-proxy (MIT).
+    No third-party scripts are loaded. Nothing mines until you press Start.
+  </footer>
+
+  <script type="text/plain" id="cpu-worker-src">/* INLINE_WORKER */</script>
+  <script id="eagle-config" type="application/json">/* INLINE_CONFIG */</script>
+  <script>/* INLINE_APP */</script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "name": "eaglesong-webminer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Opt-in Nervos CKB Eaglesong browser lottery miner: static mobile-first frontend + Node.js WebSocket bridge to an existing solo-mining Stratum proxy.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "test:integration": "node --test tests/integration/*.test.js",
+    "test:e2e": "node --test tests/e2e/*.test.js",
+    "test:gpu": "node --test tests/gpu/*.test.js",
+    "fixtures": "node scripts/gen-fixtures.mjs",
+    "pass0:capture": "node scripts/pass0-capture-transcript.mjs",
+    "bridge": "node src/bridge/server.js",
+    "dev": "node scripts/dev-all.mjs",
+    "build": "node scripts/build-single-file.mjs",
+    "build:pages": "node scripts/build-pages.mjs",
+    "verify:live": "node scripts/verify-live-flow.mjs",
+    "bench": "node scripts/bench.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "playwright": "^1.61.0"
+  }
+}

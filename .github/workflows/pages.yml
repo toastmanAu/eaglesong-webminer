@@ -1,0 +1,70 @@
+name: GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:integration
+      - run: npm run test:e2e
+      - run: node scripts/audit-public.mjs
+      - name: Build public page
+        env:
+          PAGES_BRIDGE_URL: ${{ vars.PAGES_BRIDGE_URL }}
+        run: npm run build:pages
+      - run: node scripts/audit-pages-artifact.mjs
+      - name: Verify public bridge and real solo share flow
+        env:
+          PAGES_BRIDGE_URL: ${{ vars.PAGES_BRIDGE_URL }}
+          PAGES_ORIGIN: https://${{ github.repository_owner }}.github.io
+        run: node scripts/verify-live-flow.mjs
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Verify the published page in Chromium
+        env:
+          REQUIRE_PUBLIC_PAGE: '1'
+          PAGES_URL: ${{ steps.deployment.outputs.page_url }}
+          PAGES_BRIDGE_URL: ${{ vars.PAGES_BRIDGE_URL }}
+        run: node tests/e2e/public-pages.test.js

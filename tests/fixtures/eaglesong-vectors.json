@@ -1,0 +1,66 @@
+{
+  "generatedBy": "scripts/gen-fixtures.mjs",
+  "generatorSha256": "cc740eaeb62a6decf997398fe904f6a00bb0f8be17f93318d3254de4aaf63b07",
+  "oracle": {
+    "repo": "nervosnetwork/eaglesong",
+    "commit": "39d3832dbbfb7cb513b89f4370b26793e30d9f18",
+    "wrapper": "tools/eaglesong-oracle"
+  },
+  "vectors": [
+    {
+      "source": "src/test_vectors.txt",
+      "inputHex": "61",
+      "expectedHex": "34d81e6aa4551c99edba23e65b69af25b478f5e8233461a7a8c0eb3f40407c97"
+    },
+    {
+      "source": "src/test_vectors.txt",
+      "inputHex": "616263",
+      "expectedHex": "1e93baa3ff9f8afa381430b7811d428c5b4514f39f6a78d00511b20305067b68"
+    },
+    {
+      "source": "src/test_vectors.txt",
+      "inputHex": "6d65737361676520646967657374",
+      "expectedHex": "f1d33eb7907454979d67d06dd6995806e397941a8280a25cbabecb43496217e3"
+    },
+    {
+      "source": "src/test_vectors.txt",
+      "inputHex": "6162636465666768696a6b6c6d6e6f707172737475767778797a",
+      "expectedHex": "e759b93888208f7df31f749590a7c59420deb04810bae49744cc43f4e3b8094f"
+    },
+    {
+      "source": "src/test_vectors.txt",
+      "inputHex": "4142434445464748494a4b4c4d4e4f505152535455565758595a6162636465666768696a6b6c6d6e6f707172737475767778797a30313233343536373839",
+      "expectedHex": "2893d0188b08fdc50bad2e9854ff74210eb9805f20f15d7ee1f5410163bcd295"
+    },
+    {
+      "source": "src/test_vectors.txt",
+      "inputHex": "3132333435363738393031323334353637383930313233343536373839303132333435363738393031323334353637383930313233343536373839303132333435363738393031323334353637383930",
+      "expectedHex": "5f68529f2cbea3c01ef570f0fe03e19c4fa0a1a366ab21fa75e686def0fb726a"
+    },
+    {
+      "source": "src/test_vectors.txt",
+      "inputHex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "expectedHex": "4bd70497c1045cbf2fbd946e55912ef76dc58c678812910518369911d79a5a46"
+    },
+    {
+      "source": "src/test_vectors.txt",
+      "inputHex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f8081",
+      "expectedHex": "4f91345f65bd47fde7f83b534ae4f5d0af3d8129e479583ac3b2ff02f2e83c76"
+    },
+    {
+      "source": "src/lib.rs BLANK_HASH",
+      "inputHex": "",
+      "expectedHex": "9e4452fc7aed93d7240b7b55263792befd1be09252b456401122ba71a56f62a0"
+    },
+    {
+      "source": "src/lib.rs HASH_34_1",
+      "inputHex": "313131313131313131313131313131313131313131313131313131313131313131310a",
+      "expectedHex": "a50a3310f78cbaeadcffe2d46262119eeeda9d6568b4df1b636399742c867aca"
+    },
+    {
+      "source": "src/lib.rs HASH_32_1_2_2",
+      "inputHex": "313131313131313131313131313131313131313131313131313131313131313132320a",
+      "expectedHex": "d7b68a8ba4cfc606e86ed7e2ca3244ff27b28bb24c28ee09af4b1f47af9b9236"
+    }
+  ]
+}

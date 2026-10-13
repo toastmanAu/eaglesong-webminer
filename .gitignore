@@ -1,0 +1,17 @@
+node_modules/
+vendor/
+tools/eaglesong-oracle/target/
+dist/
+config.json
+.env
+*.log
+.remember/
+.claude/
+.agents/
+.aws/
+.codex/
+*.pem
+*.key
+*.p12
+*.pfx
+runtime/

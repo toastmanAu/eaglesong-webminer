@@ -1,0 +1,270 @@
+{
+  "profile": "ckb-stratum-proxy-main",
+  "capturedAt": "2026-10-13T08:14:53.004Z",
+  "proxyDir": "/home/phill/browser-miner/real-build/vendor/ckb-stratum-proxy",
+  "proxyGitHead": "027584a65202ee8b8d58509da90096867bb885ca",
+  "note": "Captured from an UNMODIFIED solo-proxy.js against a fake node (no real chain). compact_target lowered so a CPU solves the block target; everything else is a real mainnet block reshaped as get_block_template output.",
+  "fakeNode": {
+    "port": 18114,
+    "template": {
+      "version": "0x0",
+      "compact_target": "0x1f040000",
+      "current_time": "0x19f3f2f2ff9",
+      "number": "0x12e3100",
+      "epoch": "0x6aa02980038b6",
+      "parent_hash": "0x15036ac8b589332f6fc08daf737827dae0dee3a9bbd4123d374c30831da3a47b",
+      "dao": "0xf5b497d816d5f8592e29ffd1d0992a0008656a5d79870a0a000ba117ffef3607",
+      "work_id": "0x1",
+      "cycles_limit": "0x0",
+      "bytes_limit": "0x0",
+      "uncles_count_limit": "0x0",
+      "cellbase": "[omitted]",
+      "transactions": "[0 txs omitted]",
+      "proposals": [],
+      "uncles": [],
+      "extension": "0x4a45a25817367e0ea950e6885ada7593e8d4f25de4c7f3fe60ac06f650582eba"
+    }
+  },
+  "clientUA": "EagleWebMiner/1.0",
+  "extranonce1": "a5b60f98",
+  "prefix8Hex": "a5b60f9800000000",
+  "job": {
+    "jobId": "1",
+    "powHashHex": "d466eb24285d024a5f42c8ebed04a4c8814ca95b10df565eef735eb61ebee2f2",
+    "height": 19804416,
+    "networkTargetLE": "0000000000000000000000000000000000000000000000000000000000000400",
+    "shareTargetLE": "0000000000000000000000000000000000000000000000000000000040420f00",
+    "cleanJobs": false,
+    "notifyParamCount": 5
+  },
+  "nonces": {
+    "low": {
+      "counter": "1",
+      "nonceHex": "0100000000000000a5b60f9800000000",
+      "hashHex": "ec0152be66b87763daa258bb5c8ae0f55689e91ab94d067032f655a46a30bdc6"
+    },
+    "share": {
+      "counter": "950",
+      "nonceHex": "b603000000000000a5b60f9800000000",
+      "hashHex": "000c86a7613eebaa5d7aee82c396ae4409e0731493723792b374ec2c42637540"
+    },
+    "block": {
+      "counter": "33982",
+      "nonceHex": "be84000000000000a5b60f9800000000",
+      "hashHex": "000172fff7c0318cd97dc4bd8bf44448f6c944de646a6439ea387deed1337d1c"
+    }
+  },
+  "results": {
+    "low": {
+      "id": 3,
+      "result": false,
+      "error": [
+        23,
+        "Low difficulty share",
+        null
+      ]
+    },
+    "share": {
+      "id": 4,
+      "result": true,
+      "error": null
+    },
+    "duplicate": {
+      "id": 5,
+      "result": true,
+      "error": null
+    },
+    "block": {
+      "id": 6,
+      "result": true,
+      "error": null
+    },
+    "unknownJob": {
+      "id": 7,
+      "result": true,
+      "error": null
+    }
+  },
+  "frames": [
+    {
+      "dir": "client->proxy",
+      "ts": 1791879291261,
+      "line": "{\"id\":1,\"method\":\"mining.subscribe\",\"params\":[\"EagleWebMiner/1.0\"]}"
+    },
+    {
+      "dir": "proxy->client",
+      "ts": 1791879291261,
+      "line": "{\"id\":1,\"result\":[[[\"mining.set_difficulty\",\"a5b60f98\"],[\"mining.notify\",\"a5b60f98\"]],\"a5b60f98\",4],\"error\":null}"
+    },
+    {
+      "dir": "client->proxy",
+      "ts": 1791879291261,
+      "line": "{\"id\":2,\"method\":\"mining.authorize\",\"params\":[\"web-01\",\"x\"]}"
+    },
+    {
+      "dir": "proxy->client",
+      "ts": 1791879291261,
+      "line": "{\"id\":2,\"result\":true,\"error\":null}"
+    },
+    {
+      "dir": "proxy->client",
+      "ts": 1791879291302,
+      "line": "{\"id\":null,\"method\":\"mining.set_target\",\"params\":[\"0000000000000000000000000000000000000000000000000000000040420f00\"]}"
+    },
+    {
+      "dir": "proxy->client",
+      "ts": 1791879291302,
+      "line": "{\"id\":null,\"method\":\"mining.set_difficulty\",\"params\":[0.000001]}"
+    },
+    {
+      "dir": "proxy->client",
+      "ts": 1791879291302,
+      "line": "{\"id\":null,\"method\":\"mining.notify\",\"params\":[\"1\",\"d466eb24285d024a5f42c8ebed04a4c8814ca95b10df565eef735eb61ebee2f2\",19804416,\"0000000000000000000000000000000000000000000000000000000000000400\",false]}"
+    },
+    {
+      "dir": "client->proxy",
+      "ts": 1791879291497,
+      "line": "{\"id\":3,\"method\":\"mining.submit\",\"params\":[\"web-01\",\"1\",\"0100000000000000a5b60f9800000000\"]}"
+    },
+    {
+      "dir": "proxy->client",
+      "ts": 1791879291498,
+      "line": "{\"id\":3,\"result\":false,\"error\":[23,\"Low difficulty share\",null]}"
+    },
+    {
+      "dir": "client->proxy",
+      "ts": 1791879291498,
+      "line": "{\"id\":4,\"method\":\"mining.submit\",\"params\":[\"web-01\",\"1\",\"b603000000000000a5b60f9800000000\"]}"
+    },
+    {
+      "dir": "proxy->client",
+      "ts": 1791879291499,
+      "line": "{\"id\":4,\"result\":true,\"error\":null}"
+    },
+    {
+      "dir": "client->proxy",
+      "ts": 1791879291499,
+      "line": "{\"id\":5,\"method\":\"mining.submit\",\"params\":[\"web-01\",\"1\",\"b603000000000000a5b60f9800000000\"]}"
+    },
+    {
+      "dir": "proxy->client",
+      "ts": 1791879291499,
+      "line": "{\"id\":5,\"result\":true,\"error\":null}"
+    },
+    {
+      "dir": "client->proxy",
+      "ts": 1791879291499,
+      "line": "{\"id\":6,\"method\":\"mining.submit\",\"params\":[\"web-01\",\"1\",\"be84000000000000a5b60f9800000000\"]}"
+    },
+    {
+      "dir": "proxy->client",
+      "ts": 1791879291500,
+      "line": "{\"id\":6,\"result\":true,\"error\":null}"
+    },
+    {
+      "dir": "client->proxy",
+      "ts": 1791879291500,
+      "line": "{\"id\":7,\"method\":\"mining.submit\",\"params\":[\"web-01\",\"ff\",\"b603000000000000a5b60f9800000000\"]}"
+    },
+    {
+      "dir": "proxy->client",
+      "ts": 1791879291501,
+      "line": "{\"id\":7,\"result\":true,\"error\":null}"
+    },
+    {
+      "dir": "proxy->client",
+      "ts": 1791879291542,
+      "line": "{\"id\":null,\"method\":\"mining.notify\",\"params\":[\"1\",\"d466eb24285d024a5f42c8ebed04a4c8814ca95b10df565eef735eb61ebee2f2\",19804416,\"0000000000000000000000000000000000000000000000000000000000000400\",true]}"
+    }
+  ],
+  "rpc": [
+    {
+      "ts": 1791879291501,
+      "method": "submit_block",
+      "params": [
+        "0x1",
+        {
+          "header": {
+            "version": "0x0",
+            "compact_target": "0x1f040000",
+            "timestamp": "0x19f3f2f2ff9",
+            "number": "0x12e3100",
+            "epoch": "0x6aa02980038b6",
+            "parent_hash": "0x15036ac8b589332f6fc08daf737827dae0dee3a9bbd4123d374c30831da3a47b",
+            "transactions_root": "0x27b8a9ee5947f73fd79a57094b0628b727f00dcdbf88080d453d9a89bf1b927b",
+            "proposals_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "extra_hash": "0x9ed560a076fe55244e42dd0bd62ea411a1ccc4c0862c0232b4ab47fe7b786158",
+            "dao": "0xf5b497d816d5f8592e29ffd1d0992a0008656a5d79870a0a000ba117ffef3607",
+            "nonce": "0xbe84000000000000a5b60f9800000000"
+          },
+          "uncles": [],
+          "transactions": [
+            {
+              "cell_deps": [],
+              "hash": "0x2ade44453fa0667c8b99e1d8ec824abd5a3d9f4a124f5efa83613c7144af1324",
+              "header_deps": [],
+              "inputs": [
+                {
+                  "previous_output": {
+                    "index": "0xffffffff",
+                    "tx_hash": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                  },
+                  "since": "0x12e3100"
+                }
+              ],
+              "outputs": [
+                {
+                  "capacity": "0xdc22dfa50",
+                  "lock": {
+                    "args": "0x8805eaf629140c223ece7e2ad8e2a01acb8695f9",
+                    "code_hash": "0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8",
+                    "hash_type": "type"
+                  },
+                  "type": null
+                }
+              ],
+              "outputs_data": [
+                "0x"
+              ],
+              "version": "0x0",
+              "witnesses": [
+                "0x7a0000000c00000055000000490000001000000030000000310000009bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce801140000004a336470564d07ca7059b7980481c2d59809d637210000000000000020302e3230372e3020283866366361636620323032362d30362d313029"
+              ]
+            }
+          ],
+          "proposals": [],
+          "extension": "0x4a45a25817367e0ea950e6885ada7593e8d4f25de4c7f3fe60ac06f650582eba"
+        }
+      ],
+      "response": {
+        "result": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "error": null
+      }
+    }
+  ],
+  "proxyLog": [
+    "[SOLO] All self-tests OK",
+    "[08:14:51.179] [SOLO ] ─── CKB Solo Mining Proxy ───",
+    "[08:14:51.180] [SOLO ] Node     : http://127.0.0.1:18114 (poll=200ms)",
+    "[08:14:51.180] [SOLO ] Node WS  : ws://127.0.0.1:18115/ (new_tip_header subscribe)",
+    "[08:14:51.180] [SOLO ] Coinbase : ckb1qyq...",
+    "[08:14:51.180] [SOLO ] Vardiff  : target=30s  retarget=3600s",
+    "[08:14:51.184] [SOLO ] Stats on http://localhost:8089/",
+    "[08:14:51.184] [SOLO ] Stratum listening on 127.0.0.1:3334",
+    "[08:14:51.185] [WS   ] socket error: connect ECONNREFUSED 127.0.0.1:18115",
+    "[08:14:51.189] [JOB  ] #1 height=19804416 epoch=14518.664/1706 target=0000000000000000...",
+    "[08:14:51.260] [MINE ] #0 connected from 127.0.0.1",
+    "[08:14:51.261] [MINE ] #1 connected from 127.0.0.1",
+    "[08:14:51.261] [MINE ] #0 (unknown) disconnected",
+    "[08:14:51.261] [DBG  ] #1 first data (68b): {\"id\":1,\"method\":\"mining.subscribe\",\"params\":[\"EagleWebMiner/1.0\"]}\\n",
+    "[08:14:51.261] [MINE ] #1 subscribed (ua=EagleWebMiner/1.0, session=a5b60f98)",
+    "[08:14:51.261] [MINE ] #1 authorized as web-01",
+    "[08:14:51.498] [MINE ] #1 share below local diff",
+    "[08:14:51.499] [MINE ] #1 share accepted (web-01)",
+    "[08:14:51.499] [MINE ] #1 share accepted (web-01)",
+    "[08:14:51.500] [MINE ] #1 share accepted (web-01)",
+    "[08:14:51.500] [MINE ] 🎉 BLOCK SOLUTION on job #1! Submitting…",
+    "[08:14:51.501] [BLOCK] ✓ BLOCK FOUND! height=19804416 nonce=0xbe84000000000000a5b60f9800000000 result=0x1111111111111111111111111111111111111111111111111111111111111111",
+    "[08:14:52.186] [WS   ] socket error: connect ECONNREFUSED 127.0.0.1:18115"
+  ]
+}
