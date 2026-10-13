@@ -115,7 +115,8 @@ export async function verifyLiveFlow({
     const stop = await waitFor(m => m.type === 'status' && m.requestId === 'live-stop', 'Stop ACK');
     if (stop.connected !== false) throw new Error('Stop did not close the upstream session');
     return { hashes, classification: share.classification, accepted: share.accepted,
-      payoutAddress: hello.payout.address, jobId: candidate.jobId, generation: candidate.generation };
+      payoutAddress: hello.payout.address, jobId: candidate.jobId, generation: candidate.generation,
+      nonceHex: candidate.nonceHex };
   } finally {
     ws.close();
   }
@@ -123,5 +124,5 @@ export async function verifyLiveFlow({
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   const result = await verifyLiveFlow({ bridgeUrl: process.env.PAGES_BRIDGE_URL, origin: process.env.PAGES_ORIGIN });
-  process.stdout.write(`Live flow passed: ${result.hashes} hashes, ${result.classification}, proxy ACK, verified payout ${result.payoutAddress}. No block confirmation claimed.\n`);
+  process.stdout.write(`Live flow passed: ${result.hashes} hashes, ${result.classification}, proxy ACK, nonce ${result.nonceHex}, verified payout ${result.payoutAddress}. No block confirmation claimed.\n`);
 }

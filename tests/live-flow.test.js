@@ -51,6 +51,7 @@ test('live gate requires verified payout, real Start/job/hash/share ACK, then St
   assert.equal(result.classification, 'local_accepted');
   assert.deepEqual(sent.map(m => m.type), ['hello', 'start', 'submit', 'stop']);
   assert.equal(sent[2].nonceHex.length, 32);
+  assert.equal(result.nonceHex, sent[2].nonceHex);
 });
 
 test('live gate fails closed on unverified payout or rejected share', async () => {

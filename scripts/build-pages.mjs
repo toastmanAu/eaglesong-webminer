@@ -16,7 +16,7 @@ export async function buildPages({ bridgeUrl = process.env.PAGES_BRIDGE_URL, out
   if (parsed.hostname.includes(':') || net.isIP(parsed.hostname) || parsed.hostname === 'localhost' || !parsed.hostname.includes('.')) {
     throw new Error('PAGES_BRIDGE_URL must use a public hostname');
   }
-  const result = await buildSingleFile({ bridgeUrl: parsed.origin, out: path.resolve(out), minify: true });
+  const result = await buildSingleFile({ bridgeUrl: parsed.origin, out: path.resolve(out), minify: true, devnetNotice: true });
   return result;
 }
 

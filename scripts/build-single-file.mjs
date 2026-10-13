@@ -17,7 +17,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkg = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
-export async function buildSingleFile({ bridgeUrl = 'ws://127.0.0.1:8788', out = path.join(ROOT, 'dist', 'index.html'), explorerBase = null, minify = false } = {}) {
+export async function buildSingleFile({ bridgeUrl = 'ws://127.0.0.1:8788', out = path.join(ROOT, 'dist', 'index.html'), explorerBase = null, minify = false, devnetNotice = false } = {}) {
   if (!/^wss?:\/\/[^/\s]+$/.test(bridgeUrl)) throw new Error(`bridge url must be ws(s)://host[:port] with no path: ${bridgeUrl}`);
   const common = { bundle: true, write: false, format: 'iife', platform: 'browser', target: ['es2020', 'chrome96', 'safari15'], minify, legalComments: 'inline', logLevel: 'silent' };
   const [app, worker] = await Promise.all([
@@ -37,6 +37,7 @@ export async function buildSingleFile({ bridgeUrl = 'ws://127.0.0.1:8788', out =
   ].join('; ');
   let html = readFileSync(path.join(ROOT, 'src/ui/index.html'), 'utf8');
   const put = (marker, value) => { if (!html.includes(marker)) throw new Error(`template marker missing: ${marker}`); html = html.split(marker).join(value); };
+  put('<!-- NETWORK_NOTICE -->', devnetNotice ? '<p class="lottery-note"><strong>Development chain demo. Blocks found here have no monetary value.</strong> This page connects to a private CKB development network, not CKB mainnet.</p>' : '');
   put('<!-- INLINE_CSP -->', `<meta http-equiv="Content-Security-Policy" content="${csp}">`);
   put('/* INLINE_CSS */', css);
   put('/* INLINE_WORKER */', workerJs);

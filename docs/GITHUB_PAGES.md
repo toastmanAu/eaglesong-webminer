@@ -19,8 +19,8 @@ Use a **separate** solo proxy instance for the web bridge on port 3334. Keep the
 4. Push `main` or run the `GitHub Pages` workflow manually. The workflow runs tests, both public audits, and `verify:live` before publishing `dist/index.html`. The live gate opens the public WSS bridge with the Pages Origin, requires a fresh verified payout and healthy node, hashes a bounded real job, submits a share, requires a proxy ACK, and sends Stop. After deployment, Chromium opens the actual Pages URL and verifies idle, a real ACKed browser share, Stop, and idle after reload. A failed post-deploy gate fails the workflow and requires repair; it does not undo the already published artifact. `local_accepted` and `block_candidate` do not mean a confirmed block.
 5. Open the deployed HTTPS page. Confirm its bridge badge connects, the payout address is read-only and verified from fresh proxy stats, Start produces independently checked shares, Stop halts hashing, and reload stays idle.
 
-## Current gate
+## Current deployment
 
-PASS 2's real proxy/browser gate and real CKB devnet block gate remain open. The published page must not be described as production solo mining until those tests pass against the deployed bridge and proxy. `local_accepted` means a proxy ACK, not a block or payout.
+The public bridge is `wss://eaglesong-dev.wyltekpool.com` and the dedicated real CKB development chain has accepted browser-mined blocks; see [LIVE_INTEROP_REPORT.md](LIVE_INTEROP_REPORT.md). The Pages build labels this as a development-chain demo with no monetary rewards. Mainnet mining remains unverified. `local_accepted` means a proxy ACK, not a block or payout.
 
-For a manual preflight, set `PAGES_BRIDGE_URL` and `PAGES_ORIGIN=https://OWNER.github.io`, then run `npm run verify:live`. It fails after at most two million hashes if no independently validated share is ACKed. This gate has mocked unit coverage; a real public run is still required.
+For a manual preflight, set `PAGES_BRIDGE_URL` and `PAGES_ORIGIN=https://OWNER.github.io`, then run `npm run verify:live`. It fails after at most two million hashes if no independently validated share is ACKed. The public bridge and real development node passed this gate on 2026-10-13.

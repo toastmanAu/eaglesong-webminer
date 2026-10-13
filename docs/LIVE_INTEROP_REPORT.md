@@ -1,6 +1,14 @@
 # LIVE_INTEROP_REPORT
 
-Status after PASS 1 (2026-10-13): **no live CKB node has been used yet.**
+Status (2026-10-13): **the isolated CKB development chain has accepted browser-mined Eaglesong blocks.** This proves real-node interoperability on the development chain. It does not prove CKB mainnet mining or a monetary payout.
+
+## Live development-chain gate
+
+- CKB `0.210.0` ran with `[pow] func = "Eaglesong"`, genesis `compact_target = 0x20010000`, Miner RPC on `127.0.0.1:18314`, and the block assembler lock `0x1111…1111`. The node, unmodified solo proxy, and bridge used separate loopback ports; Cloudflare Tunnel exposed only the bridge at `wss://eaglesong-dev.wyltekpool.com`.
+- `npm run verify:live` with `PAGES_ORIGIN=https://toastmanau.github.io` passed public WSS health, verified node-derived payout, Start, real Stratum job, browser Eaglesong work, proxy ACK, and Stop. The proxy reported `payoutDrift: false`.
+- The node accepted the candidate at height 2 as `0xcf191ae02f9a6dbb66c161dbd9624c3c231325449f40ece7717fed6f36ebbc53`. Its parent is the earlier browser-mined height-1 block `0x3526ae8da61838591f6c8bf29d8483a3f110be2d24aa73e938a87726471181c8`.
+- A later gate submitted browser nonce `b901000000000000e12d9be800000000` (molecule little endian). The real node accepted height 3, hash `0x3172ee8c1b11430753b6ed1c3ebe44d4c891586508de49f29fae6923df92ffe6`, with JSON-RPC nonce `0xe89b2de100000000000001b9`. Converting that nonce to 16 little-endian bytes exactly reproduces the browser nonce. Height 2 is its ancestor.
+- The public Pages build is explicitly labeled as a development-chain demo. These blocks and the displayed `ckt1…` address have no monetary value. Mainnet interoperability remains unverified.
 
 ## What has been proven against real code
 
@@ -10,19 +18,19 @@ Status after PASS 1 (2026-10-13): **no live CKB node has been used yet.**
 | Browser miner | real headless Chromium, built `dist/index.html` | `tests/e2e/browser-mining.test.js` |
 | Bridge | real | all `tests/*.test.js` |
 | solo-proxy.js | **real, unmodified** (operator copy `ce1f7349` and GitHub main `027584a6`) | `tests/integration/real-proxy.test.js`, logs in `docs/reports/logs/real-proxy-*.log` |
-| CKB node | **fake** (`tests/helpers/fake-ckb-node.js`): serves one real mainnet block as a template with `compact_target 0x1f040000`, records `submit_block`, validates nothing | — |
+| CKB node in the PASS 1 test harness | **fake** (`tests/helpers/fake-ckb-node.js`): serves one real mainnet block as a template with `compact_target 0x1f040000`, records `submit_block`, validates nothing | — |
 
-So: genuine Eaglesong work, genuine Stratum, genuine proxy share validation and genuine `submit_block` *construction* — but **no node has accepted a block**, and no claim of pool compatibility is made.
+The PASS 1 harness alone showed `submit_block` construction. The live development-chain gate above additionally demonstrates real node acceptance. No claim of pool compatibility is made.
 
-## Environment facts that shape the live gate
+## Environment facts that shaped the live gate
 
-- No CKB node on this host. A synced **testnet** node on the operator's LAN has its `Miner` RPC module disabled (`get_block_template` → `RPCModuleIsDisabled`). Enabling it (`rpc.modules += "Miner"`, a `[block_assembler]`, restart) is an operator decision on shared infrastructure, not something this project should do unattended.
-- `ckb 0.210.0` is installed locally. A private **dev chain** (`ckb init --chain dev`, `[pow] func = "Eaglesong"`, easy genesis target) is the planned PASS 2 live gate: it lets a browser genuinely solve blocks and lets `submit_block` be judged by real consensus code, with zero mainnet exposure.
+- A synced **testnet** node on the operator's LAN has its `Miner` RPC module disabled (`get_block_template` → `RPCModuleIsDisabled`). This project did not change the shared node.
+- `ckb 0.210.0` is installed locally. A separate **dev chain** (`ckb init --chain dev`, `[pow] func = "Eaglesong"`, easy genesis target) provided the PASS 2 live gate with zero mainnet exposure.
 
-## PASS 2 live gate procedure (planned)
+## PASS 2 live gate procedure (executed)
 
 1. `ckb init --chain dev` in a scratch dir; set `[pow] func = "Eaglesong"`; set `block_assembler` to a dev lock; enable `Miner` module; `ckb run`.
-2. Start the **unmodified** operator `solo-proxy.js` with `node.host=127.0.0.1`, `port=8114`, Stratum on `3334`.
+2. Start the **unmodified** operator `solo-proxy.js` with `node.host=127.0.0.1`, `node.port=18314`, Stratum on `3334`.
 3. Start the bridge, open `dist/index.html`, Start.
 4. Record: proxy log (`share accepted`, `BLOCK SOLUTION`, `submit_block` result), `get_block` of the new tip showing `header.nonce`, and verify `u128_le(header.nonce)` equals the browser's submitted nonce bytes; verify the cellbase lock equals the configured block assembler.
 5. Distinguish `node_submitted` (RPC returned a hash) from `block_confirmed` (the block is the tip's ancestor after N blocks).
