@@ -110,10 +110,11 @@ test('browser e2e: idle → start → genuine server-validated share → job chu
     // 5. stop
     await page.click('#btn-stop');
     await page.waitForFunction(() => document.getElementById('state-label').textContent === 'Stopped', null, { timeout: 10000 });
-    await sleep(1200);
-    const frozen = num(await page.textContent('#st-total'));
+    const frozen = await page.evaluate(() => window.__eagle.stats.snapshot().totalHashes);
+    assert.equal(num(await page.textContent('#st-total')), frozen, 'Stop renders the final hash count immediately');
     await sleep(1500);
     assert.equal(num(await page.textContent('#st-total')), frozen, 'no hashes after Stop');
+    assert.equal(await page.evaluate(() => window.__eagle.stats.snapshot().totalHashes), frozen);
     assert.equal(fake.connections.size, 0, 'upstream TCP session closed on Stop');
     assert.equal(await page.isDisabled('#btn-start'), false, 'can start again');
     assert.deepEqual(consoleErrors, [], 'no page errors: ' + JSON.stringify(consoleErrors));

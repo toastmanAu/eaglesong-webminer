@@ -1,10 +1,12 @@
 /** Post-deploy gate: exercise the actual GitHub Pages URL in Chromium. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 
 const pageUrl = process.env.PAGES_URL;
 const bridgeUrl = process.env.PAGES_BRIDGE_URL;
+const expectedVersion = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).version;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const count = text => Number(String(text).replace(/[^\d]/g, ''));
 
@@ -21,12 +23,17 @@ test('published Pages site: idle → real share → stop → reload idle', { ski
     let loaded = false;
     for (let attempt = 0; attempt < 6; attempt++) {
       const response = await page.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-      if (response?.ok() && await page.locator('#eagle-config').count() === 1) { loaded = true; break; }
+      if (response?.ok() && await page.locator('#eagle-config').count() === 1) {
+        const config = JSON.parse(await page.locator('#eagle-config').textContent());
+        if (config.version === expectedVersion) { loaded = true; break; }
+      }
       await sleep(2000);
     }
     assert.equal(loaded, true, 'published page and its runtime configuration must be reachable');
     const embeddedBridge = await page.locator('#eagle-config').textContent();
-    assert.equal(JSON.parse(embeddedBridge).bridgeUrl, new URL(bridgeUrl).origin, 'deployed page uses the intended public bridge');
+    const deployedConfig = JSON.parse(embeddedBridge);
+    assert.equal(deployedConfig.bridgeUrl, new URL(bridgeUrl).origin, 'deployed page uses the intended public bridge');
+    assert.equal(deployedConfig.version, expectedVersion, 'deployed page matches this release');
     assert.equal(await page.locator('#state-label').textContent(), 'Idle');
     assert.equal(count(await page.locator('#st-total').textContent()), 0);
     await sleep(1200);
@@ -51,9 +58,11 @@ test('published Pages site: idle → real share → stop → reload idle', { ski
 
     await page.locator('#btn-stop').click();
     await page.waitForFunction(() => document.querySelector('#state-label')?.textContent === 'Stopped', null, { timeout: 15000 });
-    const frozen = count(await page.locator('#st-total').textContent());
+    const frozen = await page.evaluate(() => window.__eagle.stats.snapshot().totalHashes);
+    assert.equal(count(await page.locator('#st-total').textContent()), frozen, 'Stop renders the final hash count immediately');
     await sleep(1500);
-    assert.equal(count(await page.locator('#st-total').textContent()), frozen, 'Stop leaves no residual hashing');
+    assert.equal(await page.evaluate(() => window.__eagle.stats.snapshot().totalHashes), frozen, 'Stop leaves no residual hashing');
+    assert.equal(count(await page.locator('#st-total').textContent()), frozen);
     await page.reload({ waitUntil: 'domcontentloaded' });
     assert.equal(await page.locator('#state-label').textContent(), 'Idle');
     await sleep(1000);
@@ -86,9 +95,11 @@ test('published Pages site: sustained mining stays within submission capacity an
     assert.ok((beforeStop.shares.block_candidate ?? 0) < 100, 'development-chain target must not flood block submissions');
     await page.locator('#btn-stop').click();
     await page.waitForFunction(() => document.querySelector('#state-label')?.textContent === 'Stopped', null, { timeout: 10000 });
-    const frozen = count(await page.locator('#st-total').textContent());
+    const frozen = await page.evaluate(() => window.__eagle.stats.snapshot().totalHashes);
+    assert.equal(count(await page.locator('#st-total').textContent()), frozen, 'Stop renders the final hash count immediately');
     await sleep(1000);
-    assert.equal(count(await page.locator('#st-total').textContent()), frozen, 'no hashing after Stop');
+    assert.equal(await page.evaluate(() => window.__eagle.stats.snapshot().totalHashes), frozen, 'no hashing after Stop');
+    assert.equal(count(await page.locator('#st-total').textContent()), frozen);
     assert.deepEqual(pageErrors, []);
   } finally { await browser.close(); }
 });

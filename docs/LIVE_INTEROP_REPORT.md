@@ -20,6 +20,8 @@ The current isolated development chain uses `compact_target = 0x1e040000` (rough
 
 With the final chain, public WSS → bridge → unmodified proxy → real CKB node passed again. An 8-worker Chromium run of the patched page produced 135,706,767 genuine hashes in 36 seconds, 29 block candidates, 13 local accepted shares, 2 stale results, **zero upstream errors**, and Stop completed in 128 ms. The node held `compact_target = 0x1e040000` through height 26. Its height-1 block `0xd7024609f608831325a67345d237f4cc62898b9ec16387e722ea097da50d2b86` has that target; the proxy reported 29 accepted `submit_block` responses across the run. This chain is still a valueless development demo.
 
+The first postdeploy Chromium run found that the displayed hash total could lag Stop by one render interval, even though the underlying counter had stopped. Version `0.1.2` renders the final count synchronously when Stop completes; both local and public browser gates check the displayed and underlying totals.
+
 ## What has been proven against real code
 
 | Layer | Real? | Evidence |

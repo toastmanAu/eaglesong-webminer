@@ -157,6 +157,7 @@ async function stopAll() {
   stats.stop();
   try { if (client.state === 'open') await client.stop(); } catch (e) { log('warn', `stop ack: ${e.message}`); }
   if (state.dispatch('workers_drained')) onStateChanged();
+  render();
   log('ok', 'stopped — no hashing, upstream session closed');
 }
 
