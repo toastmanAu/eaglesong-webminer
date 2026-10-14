@@ -61,13 +61,16 @@ export function attachWorker(port) {
         case 'mine': {
           if (typeof m.firstLo !== 'string' || !/^\d+$/.test(m.firstLo)) throw new RangeError('mine.firstLo must be a decimal string');
           if (!Number.isInteger(m.count) || m.count <= 0) throw new RangeError('mine.count must be a positive integer');
+          if (m.maxCandidates !== undefined && (!Number.isInteger(m.maxCandidates) || m.maxCandidates < 1 || m.maxCandidates > 64)) {
+            throw new RangeError('mine.maxCandidates must be an integer in [1, 64]');
+          }
           const firstLo = BigInt(m.firstLo);
           if (!job || job.generation !== m.generation) {
             reply({ type: 'batch', generation: m.generation, firstLo: m.firstLo, count: m.count, hashes: 0, candidates: [], bestHashHex: null, nextLo: m.firstLo, durationMs: 0, truncated: false, stale: true });
             return;
           }
           const t0 = nowMs();
-          const r = mineRange(job, { firstLo, count: m.count });
+          const r = mineRange(job, { firstLo, count: m.count }, { maxCandidates: m.maxCandidates ?? 64 });
           reply({
             type: 'batch', generation: job.generation, firstLo: m.firstLo, count: m.count,
             hashes: r.hashes, candidates: r.candidates, bestHashHex: r.bestHashHex, nextLo: r.nextLo.toString(),

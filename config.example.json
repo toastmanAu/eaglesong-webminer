@@ -5,6 +5,7 @@
     "allowedOrigins": ["http://localhost:5173", "http://127.0.0.1:5173"],
     "maxConnections": 50,
     "maxConnectionsPerIp": 4,
+    "maxConcurrentSubmissions": 8,
     "maxInboundFrameBytes": 16384,
     "perSessionSubmissionsPerMinute": 120,
     "maxJobsPerSession": 32,

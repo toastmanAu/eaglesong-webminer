@@ -53,6 +53,7 @@ let calibrationHashes = 0;
 let calibrationAt = performance.now();
 const coord = createMinerCoordinator({
   createWorker, workerCount: Number($('workers').value), intensity: Number($('intensity').value), batchTargetMs: 50,
+  maxCandidatesPerBatch: 1,
   onBatch: (b) => { stats.addHashes(b.hashes, 'cpu'); calibrationHashes += b.hashes; if (b.bestHashHex) stats.recordBestHash(b.bestHashHex); },
   onCandidate: (c) => submitCandidate(c),
   onEvent: (type, d) => {
@@ -181,7 +182,7 @@ function onStateChanged() {
 // ── shares ──────────────────────────────────────────────────────────────────
 function submitCandidate(c) {
   $('st-last-nonce').textContent = c.nonceHex;
-  client.submit(c).then((r) => {
+  return client.submit(c).then((r) => {
     stats.recordShare(r.classification);
     const lvl = r.classification === 'block_candidate' ? 'gold' : r.accepted ? 'ok' : r.classification.startsWith('rejected') ? 'warn' : 'err';
     log(lvl, `share ${r.classification}${r.reason ? ` — ${r.reason}` : ''} nonce ${c.nonceHex.slice(0, 16)}… hash ${(r.hashHex ?? c.hashHex).slice(0, 12)}…`);

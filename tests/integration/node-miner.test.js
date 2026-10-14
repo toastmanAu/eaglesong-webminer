@@ -54,9 +54,9 @@ async function stack(fn) {
   const client = createProtocolClient({ url: `ws://127.0.0.1:${bridge.port}`, WebSocketImpl: OriginWS, requestTimeoutMs: 5000 });
   const results = [], events = [];
   const coord = createMinerCoordinator({
-    createWorker: inProcWorker, workerCount: 2, batchTargetMs: 10, initialBatchCount: 32, watchdogMs: 5000,
+    createWorker: inProcWorker, workerCount: 2, batchTargetMs: 10, initialBatchCount: 32, watchdogMs: 5000, maxCandidatesPerBatch: 1,
     onEvent: (type, d) => events.push({ type, ...d }),
-    onCandidate: (c) => { client.submit(c).then(r => results.push(r), e => results.push({ error: e.message, candidate: c })); },
+    onCandidate: (c) => client.submit(c).then(r => results.push(r), e => results.push({ error: e.message, candidate: c })),
   });
   client.on('job', (job) => coord.setJob(job));
   try { await fn({ fake, bridge, client, coord, results, events }); }

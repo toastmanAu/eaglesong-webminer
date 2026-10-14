@@ -11,7 +11,7 @@ const PROTOCOL = 'ckb-128nonce-v1';
 
 export async function verifyLiveFlow({
   bridgeUrl, origin, fetchImpl = fetch, WebSocketImpl = WebSocket,
-  timeoutMs = 15000, maxHashes = 2_000_000,
+  timeoutMs = 15000, maxHashes = 4_000_000,
 } = {}) {
   if (!bridgeUrl || !origin) throw new Error('bridgeUrl and Pages origin are required');
   const bridge = new URL(bridgeUrl);

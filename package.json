@@ -1,6 +1,6 @@
 {
   "name": "eaglesong-webminer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Opt-in Nervos CKB Eaglesong browser lottery miner: static mobile-first frontend + Node.js WebSocket bridge to an existing solo-mining Stratum proxy.",
   "license": "MIT",

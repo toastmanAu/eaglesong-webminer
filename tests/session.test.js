@@ -243,6 +243,19 @@ test('upstream submit timeout → upstream_error (the share is not silently lost
   }, { config: { bridge: { perSessionSubmissionsPerMinute: 120, maxJobsPerSession: 8, submitTimeoutMs: 300 } } });
 });
 
+test('concurrent submit cap refuses excess work promptly even for network candidates', async () => {
+  await harness(async ({ server, start, msg, waitFor }) => {
+    const job = await start();
+    server.state.faults.dropSubmitResponses = true;
+    msg({ type: 'submit', requestId: 'busy-1', jobId: job.jobId, generation: job.generation, nonceHex: t.nonces.share.nonceHex });
+    msg({ type: 'submit', requestId: 'busy-2', jobId: job.jobId, generation: job.generation, nonceHex: t.nonces.block.nonceHex });
+    const refusal = await waitFor(m => m.type === 'error' && m.requestId === 'busy-2');
+    assert.equal(refusal.code, 'SUBMISSION_BUSY');
+    const first = await waitFor(m => m.type === 'share_result' && m.requestId === 'busy-1', 4000);
+    assert.equal(first.classification, 'upstream_error');
+  }, { config: { bridge: { perSessionSubmissionsPerMinute: 120, maxJobsPerSession: 8, submitTimeoutMs: 300, maxConcurrentSubmissions: 1 } } });
+});
+
 test('submit rate limit: the (N+1)th non-block submit in a minute is RATE_LIMITED, but a block candidate still passes', async () => {
   await harness(async ({ server, start, msg, waitFor }) => {
     const job = await start();

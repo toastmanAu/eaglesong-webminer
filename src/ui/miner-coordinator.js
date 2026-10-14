@@ -25,6 +25,10 @@ export function createMinerCoordinator(opts) {
     now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now()),
     setTimeoutFn = (fn, ms) => setTimeout(fn, ms), clearTimeoutFn = (h) => clearTimeout(h),
   } = opts;
+  const maxCandidatesPerBatch = opts.maxCandidatesPerBatch ?? 64;
+  if (!Number.isInteger(maxCandidatesPerBatch) || maxCandidatesPerBatch < 1 || maxCandidatesPerBatch > 64) {
+    throw new RangeError('maxCandidatesPerBatch must be an integer in [1, 64]');
+  }
   let intensity = clampIntensity(opts.intensity ?? 100);
   let desiredWorkers = clampWorkers(opts.workerCount ?? 1);
 
@@ -43,7 +47,7 @@ export function createMinerCoordinator(opts) {
   function clampWorkers(n) { return Math.min(MAX_WORKERS, Math.max(1, Math.floor(Number(n) || 1))); }
 
   function spawn(index) {
-    const slot = { index, w: null, ready: false, selftest: null, busy: false, batchCount: initialBatchCount, restTimer: null, watchdog: null, generationSent: -1, range: null, rangeKey: null };
+    const slot = { index, w: null, ready: false, selftest: null, busy: false, awaitingCandidate: false, batchCount: initialBatchCount, restTimer: null, watchdog: null, generationSent: -1, range: null, rangeKey: null };
     slot.w = createWorker();
     slot.w.addEventListener('message', (ev) => onMessage(slot, ev.data));
     slot.w.addEventListener?.('error', (ev) => { onEvent('worker_error', { workerIndex: index, message: ev?.message ?? 'worker error' }); replace(slot, 'error event'); });
@@ -89,7 +93,7 @@ export function createMinerCoordinator(opts) {
   }
 
   function dispatch(slot) {
-    if (!running || !job || !slot.ready || slot.busy || disposed) return;
+    if (!running || !job || !slot.ready || slot.busy || slot.awaitingCandidate || disposed) return;
     if (slot.generationSent !== job.generation) sendJob(slot);
     const range = pendingRanges.shift() ?? allocator.next(slot.batchCount);
     if (range === null) {
@@ -99,7 +103,7 @@ export function createMinerCoordinator(opts) {
     slot.busy = true;
     slot.range = range;
     slot.rangeKey = jobKey;
-    slot.w.postMessage({ type: 'mine', generation: job.generation, firstLo: range.firstLo.toString(), count: range.count });
+    slot.w.postMessage({ type: 'mine', generation: job.generation, firstLo: range.firstLo.toString(), count: range.count, maxCandidates: maxCandidatesPerBatch });
     armWatchdog(slot, 'mine');
   }
 
@@ -136,8 +140,22 @@ export function createMinerCoordinator(opts) {
           const ideal = (m.count * batchTargetMs) / d;
           slot.batchCount = Math.round(Math.min(MAX_BATCH, Math.max(MIN_BATCH, slot.batchCount * 0.5 + ideal * 0.5)));
           onBatch({ workerIndex: slot.index, generation: m.generation, hashes: m.hashes, count: m.count, durationMs: m.durationMs, bestHashHex: m.bestHashHex, truncated: m.truncated });
-          for (const c of m.candidates) onCandidate(c);
+          const pending = [];
+          for (const c of m.candidates) {
+            try {
+              const result = onCandidate(c);
+              if (result && typeof result.then === 'function') pending.push(result);
+            } catch (e) { onEvent('worker_error', { workerIndex: slot.index, message: `candidate handler: ${e.message}` }); }
+          }
+          if (pending.length) {
+            slot.awaitingCandidate = true;
+            Promise.allSettled(pending).then(() => {
+              slot.awaitingCandidate = false;
+              if (running && workers.includes(slot)) dispatch(slot);
+            });
+          }
         }
+        if (slot.awaitingCandidate) { if (!running) checkDrained(); return; }
         if (!running) { checkDrained(); return; }
         if (intensity >= 100 || m.stale) { dispatch(slot); return; }
         const rest = Math.max(1, Math.round(m.durationMs * (100 - intensity) / intensity));

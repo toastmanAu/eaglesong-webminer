@@ -28,6 +28,7 @@ const baseConfig = (stratumPort, over = {}) => ({
 test('validateConfig accepts the example config and fills documented defaults', () => {
   const example = JSON.parse(readFileSync(path.join(ROOT, 'config.example.json'), 'utf8'));
   const cfg = validateConfig(example);
+  assert.equal(cfg.bridge.maxConcurrentSubmissions, 8);
   assert.equal(cfg.bridge.listenHost, '127.0.0.1');
   assert.equal(cfg.bridge.port, 8788);
   assert.equal(cfg.stratum.port, 3334);
@@ -49,6 +50,7 @@ test('validateConfig fails closed with the offending path', () => {
     [{ ...ok, stratum: { ...ok.stratum, host: '' } }, /stratum\.host/],
     [{ ...ok, mining: { ...ok.mining, mode: 'pool' } }, /mining\.mode/],
     [{ ...ok, bridge: { ...ok.bridge, perSessionSubmissionsPerMinute: 0 } }, /perSessionSubmissionsPerMinute/],
+    [{ ...ok, bridge: { ...ok.bridge, maxConcurrentSubmissions: 0 } }, /maxConcurrentSubmissions/],
     [{ ...ok, bridge: { ...ok.bridge, maxInboundFrameBytes: 100000 } }, /maxInboundFrameBytes/],
     [{ ...ok, payout: { ...ok.payout, displayAddress: 'bc1qnotckb' } }, /payout\.displayAddress/],
     [{ ...ok, extra: 1 }, /unknown.*extra/i],

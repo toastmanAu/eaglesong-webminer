@@ -36,6 +36,7 @@ export function createSession(deps) {
   const registry = createSessionJobRegistry({ maxJobs: config.bridge.maxJobsPerSession ?? 32 });
   const stats = { submits: 0, byClassification: {}, startedAt: now(), jobs: 0, upstreamSessions: 0 };
   const submitTimes = []; // sliding window for the rate limit
+  let pendingSubmissions = 0;
   let state = 'idle';
   let conn = null;
   let prefix8 = null;
@@ -192,6 +193,15 @@ export function createSession(deps) {
 
   async function handleSubmit(msg) {
     if (state !== 'active' || !conn) return error('NOT_STARTED', 'mining session is not active', msg.requestId);
+    if (pendingSubmissions >= (config.bridge.maxConcurrentSubmissions ?? 8)) {
+      return error('SUBMISSION_BUSY', 'too many submissions awaiting upstream; slow down', msg.requestId);
+    }
+    pendingSubmissions++;
+    try { await submitValidated(msg); }
+    finally { pendingSubmissions--; }
+  }
+
+  async function submitValidated(msg) {
     stats.submits++;
     const v = evaluateSubmit(registry, msg);
     const base = { v: 1, type: 'share_result', requestId: msg.requestId ?? null, jobId: msg.jobId, generation: msg.generation, nonceHex: msg.nonceHex, hashHex: v.hashHex, clientHashMismatch: v.clientHashMismatch };

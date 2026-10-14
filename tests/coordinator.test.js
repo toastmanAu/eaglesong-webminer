@@ -88,6 +88,41 @@ test('worker protocol: malformed job/mine messages produce error messages, never
   w.terminate();
 });
 
+test('worker candidate cap returns the unsearched nonce tail', async () => {
+  const w = inProcWorker();
+  const inbox = [];
+  w.addEventListener('message', (e) => inbox.push(e.data));
+  try {
+    w.postMessage({ type: 'job', generation: 1, jobId: t.job.jobId, powHashHex: t.job.powHashHex,
+      prefix8Hex: t.prefix8Hex, shareTargetBE: 'f'.repeat(64), networkTargetBE: null });
+    w.postMessage({ type: 'mine', generation: 1, firstLo: '0', count: 16, maxCandidates: 1 });
+    await until(() => inbox.some(m => m.type === 'batch'));
+    const batch = inbox.find(m => m.type === 'batch');
+    assert.equal(batch.hashes, 1);
+    assert.equal(batch.candidates.length, 1);
+    assert.equal(batch.truncated, true);
+    assert.equal(batch.nextLo, '1');
+  } finally { w.terminate(); }
+});
+
+test('coordinator waits for candidate submission before mining the next range on that worker', async () => {
+  let release;
+  const candidates = [];
+  await run({ workerCount: 1, initialBatchCount: 16, maxCandidatesPerBatch: 1,
+    onCandidate: (c) => { candidates.push(c); return new Promise(resolve => { release = resolve; }); } }, async ({ coord }) => {
+    await coord.init();
+    coord.setJob(job({ shareTarget: MAX_U256, networkTarget: null }));
+    coord.start();
+    await until(() => candidates.length === 1);
+    await sleep(50);
+    assert.equal(candidates.length, 1, 'submission backlog must not grow while the first request is pending');
+    release();
+    await until(() => candidates.length === 2);
+    assert.equal(splitNonce16(hexToBytes(candidates[1].nonceHex)).counterLo, 1n);
+    await coord.stop();
+  });
+});
+
 test('coordinator: init spawns N workers (all self-tested), start mines, hashes are reported, candidates carry the session prefix and disjoint counters', async () => {
   await run({ workerCount: 2 }, async ({ coord, candidates, batches }) => {
     const info = await coord.init();

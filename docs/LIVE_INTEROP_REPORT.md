@@ -10,6 +10,16 @@ Status (2026-10-13): **the isolated CKB development chain has accepted browser-m
 - A later gate submitted browser nonce `b901000000000000e12d9be800000000` (molecule little endian). The real node accepted height 3, hash `0x3172ee8c1b11430753b6ed1c3ebe44d4c891586508de49f29fae6923df92ffe6`, with JSON-RPC nonce `0xe89b2de100000000000001b9`. Converting that nonce to 16 little-endian bytes exactly reproduces the browser nonce. Height 2 is its ancestor.
 - The public Pages build is explicitly labeled as a development-chain demo. These blocks and the displayed `ckt1…` address have no monetary value. Mainnet interoperability remains unverified.
 
+## 2026-10-14 submission flood and repair
+
+The first development genesis used `compact_target = 0x20010000` (roughly one network candidate per 256 hashes). An 8-worker browser run generated thousands of valid block candidates in seconds. Because network candidates intentionally bypassed the ordinary share rate limit, proxy and node submissions backed up; the browser recorded `share request timeout after 15000ms` and Stop was delayed. The old development-chain data is preserved under ignored `runtime/ckb/data-before-difficulty-fix` for diagnosis.
+
+An initial repair changed the target to `0x1e400000`, but CKB's short development epoch adjusted it easier during a high-rate run. That 8-worker predeployment test still produced 6,081 block candidates and 930 upstream errors in 36 seconds. Its chain data is preserved under ignored `runtime/ckb/data-after-first-fix`.
+
+The current isolated development chain uses `compact_target = 0x1e040000` (roughly one candidate per 4.2 million hashes) and a long genesis epoch of 1,000,000 blocks to keep the target stable for this demo. The browser now returns at most one candidate per worker batch and waits for its submission result before giving that worker more nonce work. The bridge caps concurrent submissions per session, including network candidates; the public runtime sets that cap to two and limits simultaneous sessions to four. This preserves explicit responses and bounds pressure on the unmodified solo proxy.
+
+With the final chain, public WSS → bridge → unmodified proxy → real CKB node passed again. An 8-worker Chromium run of the patched page produced 135,706,767 genuine hashes in 36 seconds, 29 block candidates, 13 local accepted shares, 2 stale results, **zero upstream errors**, and Stop completed in 128 ms. The node held `compact_target = 0x1e040000` through height 26. Its height-1 block `0xd7024609f608831325a67345d237f4cc62898b9ec16387e722ea097da50d2b86` has that target; the proxy reported 29 accepted `submit_block` responses across the run. This chain is still a valueless development demo.
+
 ## What has been proven against real code
 
 | Layer | Real? | Evidence |

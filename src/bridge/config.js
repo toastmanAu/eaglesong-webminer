@@ -37,7 +37,7 @@ export function validateConfig(raw) {
   if (!isObj(raw)) throw new ConfigError('', 'must be a JSON object');
   onlyKeys(raw, '', ['bridge', 'stratum', 'mining', 'payout']);
   const b = isObj(raw.bridge) ? raw.bridge : (raw.bridge === undefined ? {} : (() => { throw new ConfigError('bridge', 'must be an object'); })());
-  onlyKeys(b, 'bridge', ['listenHost', 'port', 'allowedOrigins', 'maxConnections', 'maxConnectionsPerIp', 'trustedClientIpHeader', 'maxInboundFrameBytes', 'perSessionSubmissionsPerMinute', 'maxJobsPerSession', 'submitTimeoutMs', 'statusIntervalMs', 'heartbeatIntervalMs']);
+  onlyKeys(b, 'bridge', ['listenHost', 'port', 'allowedOrigins', 'maxConnections', 'maxConnectionsPerIp', 'trustedClientIpHeader', 'maxInboundFrameBytes', 'perSessionSubmissionsPerMinute', 'maxConcurrentSubmissions', 'maxJobsPerSession', 'submitTimeoutMs', 'statusIntervalMs', 'heartbeatIntervalMs']);
   const listenHost = str(b.listenHost, 'bridge.listenHost', { def: '127.0.0.1' });
   if (b.allowedOrigins !== undefined && (!Array.isArray(b.allowedOrigins) || !b.allowedOrigins.every(o => typeof o === 'string' && o.length > 0 && o.length <= 253))) {
     throw new ConfigError('bridge.allowedOrigins', 'must be an array of non-empty origin strings');
@@ -55,6 +55,7 @@ export function validateConfig(raw) {
     trustedClientIpHeader: b.trustedClientIpHeader === undefined ? null : str(b.trustedClientIpHeader, 'bridge.trustedClientIpHeader', { allowNull: true }),
     maxInboundFrameBytes: int(b.maxInboundFrameBytes, 'bridge.maxInboundFrameBytes', { min: 1024, max: 65536, def: 16384 }),
     perSessionSubmissionsPerMinute: int(b.perSessionSubmissionsPerMinute, 'bridge.perSessionSubmissionsPerMinute', { min: 1, max: 100000, def: 120 }),
+    maxConcurrentSubmissions: int(b.maxConcurrentSubmissions, 'bridge.maxConcurrentSubmissions', { min: 1, max: 64, def: 8 }),
     maxJobsPerSession: int(b.maxJobsPerSession, 'bridge.maxJobsPerSession', { min: 8, max: 1024, def: 32 }),
     submitTimeoutMs: int(b.submitTimeoutMs, 'bridge.submitTimeoutMs', { min: 100, max: 120000, def: 10000 }),
     statusIntervalMs: int(b.statusIntervalMs, 'bridge.statusIntervalMs', { min: 100, max: 60000, def: 1000 }),

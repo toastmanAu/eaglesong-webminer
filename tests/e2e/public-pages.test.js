@@ -63,3 +63,32 @@ test('published Pages site: idle → real share → stop → reload idle', { ski
     await browser.close();
   }
 });
+
+test('published Pages site: sustained mining stays within submission capacity and Stop remains prompt', { skip: !pageUrl && process.env.REQUIRE_PUBLIC_PAGE !== '1' }, async () => {
+  assert.ok(pageUrl && bridgeUrl, 'public page and bridge are required');
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+  const pageErrors = [];
+  page.on('pageerror', e => pageErrors.push(String(e)));
+  try {
+    const response = await page.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+    assert.equal(response?.ok(), true);
+    await page.locator('#workers').evaluate(el => {
+      el.value = el.max;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await page.locator('#btn-start').click();
+    await page.waitForFunction(() => document.querySelector('#state-label')?.textContent === 'Mining', null, { timeout: 30000 });
+    await sleep(30000);
+    const beforeStop = await page.evaluate(() => window.__eagle.stats.snapshot());
+    assert.ok(beforeStop.totalHashes > 100000, 'sustained run performed real hashing');
+    assert.equal(beforeStop.shares.upstream_error ?? 0, 0, 'no submission timeouts or upstream errors');
+    assert.ok((beforeStop.shares.block_candidate ?? 0) < 100, 'development-chain target must not flood block submissions');
+    await page.locator('#btn-stop').click();
+    await page.waitForFunction(() => document.querySelector('#state-label')?.textContent === 'Stopped', null, { timeout: 10000 });
+    const frozen = count(await page.locator('#st-total').textContent());
+    await sleep(1000);
+    assert.equal(count(await page.locator('#st-total').textContent()), frozen, 'no hashing after Stop');
+    assert.deepEqual(pageErrors, []);
+  } finally { await browser.close(); }
+});
