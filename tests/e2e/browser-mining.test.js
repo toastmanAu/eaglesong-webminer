@@ -13,6 +13,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, mkdirSync } from 'node:fs';
+import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
@@ -151,5 +152,47 @@ test('browser e2e: hiding the tab pauses hashing by default and resumes when vis
     await page.waitForFunction((f) => Number(document.getElementById('st-total').textContent.replace(/[^\d]/g, '')) > f, frozen, { timeout: 10000 });
     await page.click('#btn-stop');
     await page.waitForFunction(() => document.getElementById('state-label').textContent === 'Stopped', null, { timeout: 10000 });
+  });
+});
+
+test('browser e2e: saved endpoint and requested address fail closed before upstream start', async () => {
+  await stack(async ({ page, fake, bridge, ui }) => {
+    const payoutAddress = `ckt1qyq${'q'.repeat(40)}`;
+    let payoutDrift = false;
+    const statsServer = http.createServer((_req, res) => {
+      res.setHeader('content-type', 'application/json');
+      res.end(JSON.stringify({ payoutAddress, nodeHealthy: true, payoutDrift, templateAge: 0 }));
+    });
+    await new Promise(resolve => statsServer.listen(0, '127.0.0.1', resolve));
+    const alternate = await startBridgeServer(validateConfig({
+      bridge: { listenHost: '127.0.0.1', port: 0, allowedOrigins: [ui.url], statusIntervalMs: 500 },
+      stratum: { host: '127.0.0.1', port: fake.port, statsPort: statsServer.address().port, profile: 'solo-proxy-v1' },
+      mining: { mode: 'solo' },
+    }), { logger: () => {} });
+    try {
+    await page.goto(`${ui.url}/index.html`);
+    await page.fill('#endpoint-input', `ws://127.0.0.1:${alternate.port}`);
+    await page.fill('#mining-address-input', payoutAddress);
+    await page.click('#btn-save-connection');
+    assert.match(await page.textContent('#connection-feedback'), /saved/i);
+    assert.equal(await page.evaluate(() => window.__eagle.client.endpoint), `ws://127.0.0.1:${alternate.port}/`);
+    await page.reload();
+    assert.equal(await page.inputValue('#mining-address-input'), payoutAddress);
+    assert.equal(await page.textContent('#state-label'), 'Idle');
+    await page.click('#btn-start');
+    await page.waitForFunction(() => document.getElementById('state-label').textContent === 'Mining', null, { timeout: 15000 });
+    assert.equal(bridge.sessions.size, 0, 'default endpoint is not used');
+    assert.equal(fake.connections.size, 1, 'matching address opens custom endpoint upstream');
+    payoutDrift = true;
+    await page.waitForFunction(() => document.getElementById('state-label').textContent === 'Error', null, { timeout: 8000 });
+    await page.waitForFunction(() => window.__eagle.coord.snapshot().running === false, null, { timeout: 5000 });
+    await page.waitForFunction(() => window.__eagle.client.state === 'open' && document.getElementById('payout-verified').textContent.includes('unverified'), null, { timeout: 5000 });
+    await page.fill('#mining-address-input', 'ckt1qyqmyrequestedaddress');
+    await page.click('#btn-save-connection');
+    await page.click('#btn-start');
+    await page.waitForFunction(() => document.getElementById('state-label').textContent === 'Error', null, { timeout: 15000 });
+    assert.equal(fake.connections.size, 0, 'address mismatch never opens upstream Stratum');
+    assert.equal(await page.textContent('#payout-address'), payoutAddress);
+    } finally { await alternate.close(); await new Promise(resolve => statsServer.close(resolve)); }
   });
 });

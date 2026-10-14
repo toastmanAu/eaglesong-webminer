@@ -30,10 +30,9 @@ export async function buildSingleFile({ bridgeUrl = 'ws://127.0.0.1:8788', out =
   const css = readFileSync(path.join(ROOT, 'src/ui/styles.css'), 'utf8');
   const buildHash = createHash('sha256').update(appJs).update(workerJs).update(css).digest('hex');
   const config = { bridgeUrl, explorerBase, version: pkg.version, buildHash, builtAt: new Date().toISOString() };
-  const bridgeOrigin = bridgeUrl.replace(/^ws/, 'http').replace(/^https?/, (m) => (bridgeUrl.startsWith('wss') ? 'wss' : 'ws'));
   const csp = [
     "default-src 'none'", "script-src 'unsafe-inline'", "style-src 'unsafe-inline'", 'worker-src blob:',
-    `connect-src ${bridgeOrigin}`, "img-src data:", "base-uri 'none'", "form-action 'none'", // frame-ancestors is header-only (ignored in <meta>): set it in the static host's HTTP headers (see docs/SECURITY.md)
+    `connect-src ${bridgeUrl.startsWith('wss:') ? 'wss:' : 'ws: wss:'}`, "img-src data:", "base-uri 'none'", "form-action 'none'", // frame-ancestors is header-only (ignored in <meta>): set it in the static host's HTTP headers (see docs/SECURITY.md)
   ].join('; ');
   let html = readFileSync(path.join(ROOT, 'src/ui/index.html'), 'utf8');
   const put = (marker, value) => { if (!html.includes(marker)) throw new Error(`template marker missing: ${marker}`); html = html.split(marker).join(value); };

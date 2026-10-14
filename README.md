@@ -5,7 +5,7 @@ An **opt-in Nervos CKB Eaglesong browser lottery miner**: a single self-containe
 work in Web Workers, plus a Node.js WebSocket **bridge** that speaks real TCP
 Stratum to the existing `ckb-stratum-proxy` solo proxy. Nothing runs until you
 press **Start**. Rewards go to the node operator's configured block-assembler
-address, which the page displays read-only.
+address, which the page displays as the actual payout.
 
 Status: **PASS 0 and PASS 1 complete** (CPU JavaScript backend, deterministic
 and real-proxy integration). WASM, WebGPU and pool relay are later, gated passes
@@ -17,7 +17,7 @@ and are disabled in the UI. See `docs/reports/`.
 git clone <this repo> eaglesong-webminer && cd eaglesong-webminer
 ./scripts/check-deps.sh       # read-only dependency audit
 npm ci
-npm test                     # fast, deterministic unit tests (171)
+npm test                     # fast, deterministic unit tests
 npx playwright install chromium
 npm run test:e2e             # headless Chromium: start → genuine server-validated share → stop
 npm run test:integration     # no-browser stack + browser → REAL solo-proxy.js (skips if no proxy checkout)
@@ -37,6 +37,8 @@ node scripts/dev-all.mjs --fake-stratum
 ### GitHub Pages (public page)
 
 GitHub Pages hosts the static page; it does not run the Node bridge. Set up a separate public WSS bridge endpoint and private solo proxy/CKB node, then follow [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md). The Pages build requires the public `PAGES_BRIDGE_URL` repository variable and fails if it points to localhost or plaintext WebSocket.
+
+The Connection card lets each browser save a custom bridge endpoint and an optional mining address. When an address is entered, Start checks that it exactly matches the endpoint's node-verified solo payout and stops if that verification later changes. The address is a safety check: it does not reconfigure the node or redirect rewards. To mine to a different address, run a compatible bridge, solo proxy, and CKB node whose block assembler pays that address, and allow this site's origin on that bridge. Settings stay in this browser; reloading never starts mining.
 
 Windows 11: install Node 20+ from nodejs.org, then the same `npm` commands in PowerShell (`npx playwright install chromium` for the browser tests). Optional for later passes: clang/wasm-ld or Emscripten (WASM), Rust `cargo` (to rebuild the Eaglesong oracle fixtures).
 

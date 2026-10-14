@@ -10,11 +10,13 @@ import { createMinerState } from './miner-state.js';
 import { createMiningStats } from './mining-stats.js';
 import { oddsForTarget, formatHashrate, formatDuration, formatProbability } from './odds.js';
 import { targetToHexBE } from '../hash/target.js';
+import { normalizeEndpoint, normalizeMiningAddress, assertExpectedPayout } from './connection-settings.js';
 
 const $ = (id) => document.getElementById(id);
 const CONFIG = readConfig();
 const LOG_MAX = 250;
 const PREF_KEY = 'eagle.prefs.v1';
+const CONNECTION_KEY = 'eagle.connection.v1';
 
 // ── capabilities ────────────────────────────────────────────────────────────
 const caps = {
@@ -32,7 +34,6 @@ $('cap-wasm').textContent = caps.wasm ? 'available (backend not yet enabled)' : 
 $('cap-webgpu').textContent = caps.webgpu ? 'available (backend not yet enabled)' : 'no';
 $('cap-secure').textContent = caps.secure ? 'yes' : 'no (http) — fine for localhost dev';
 $('diag-build').textContent = `${CONFIG.version} ${CONFIG.buildHash ? CONFIG.buildHash.slice(0, 12) : 'dev'}`;
-$('bridge-url').textContent = CONFIG.bridgeUrl;
 if (caps.mobile) $('device-warning').hidden = false;
 
 // ── preferences (safe UI prefs only) ────────────────────────────────────────
@@ -48,7 +49,12 @@ syncOutputs();
 // ── core objects ────────────────────────────────────────────────────────────
 const state = createMinerState();
 const stats = createMiningStats();
-const client = createProtocolClient({ url: CONFIG.bridgeUrl, capabilities: ['cpu-js'] });
+let connection = loadConnection();
+const client = createProtocolClient({ url: connection.endpoint, capabilities: ['cpu-js'] });
+$('endpoint-input').value = connection.endpoint;
+$('mining-address-input').value = connection.address;
+$('bridge-url').textContent = connection.endpoint;
+let latestPayout = null;
 let calibrationHashes = 0;
 let calibrationAt = performance.now();
 const coord = createMinerCoordinator({
@@ -81,6 +87,7 @@ client.on('hello', (h) => {
   log('info', `session ${h.sessionId.slice(0, 8)}… payout ${h.payout?.address ?? 'n/a'} (${h.payout?.verified ? 'verified' : 'unverified'})`);
 });
 client.on('job', (job) => {
+  if (!enforcePayout()) return;
   coord.setJob(job);
   stats.recordJob({ jobId: job.jobId, generation: job.generation, height: job.height, receivedAtMs: job.receivedAtMs });
   $('job-id').textContent = job.jobId;
@@ -93,18 +100,31 @@ client.on('job', (job) => {
 });
 client.on('status', (s) => {
   if (s.payout) showPayout(s.payout);
+  enforcePayout();
   if (s.connected === false && state.state !== 'idle' && state.state !== 'stopped' && state.state !== 'stopping') {
     // upstream gone while we were mining: reflect it truthfully
   }
   $('job-age').textContent = typeof s.jobAgeMs === 'number' ? `${(s.jobAgeMs / 1000).toFixed(1)} s` : '—';
 });
 function showPayout(payout) {
+  latestPayout = payout ?? null;
   $('payout-address').textContent = payout?.address ?? 'not configured by the operator';
   $('payout-verified').textContent = payout?.verified ? 'verified from node template' : 'unverified (operator config)';
   $('payout-verified').className = `badge ${payout?.verified ? 'badge-ok' : 'badge-warn'}`;
   $('payout-source').textContent = payout?.verified
-    ? 'Derived by the proxy from the current node cellbase lock. You cannot change it here.'
-    : 'Operator-configured or unavailable. A typed address here would not redirect rewards.';
+    ? 'Endpoint reports this address from its current node cellbase lock.'
+    : 'Operator-configured or unavailable. An entered address cannot redirect rewards.';
+}
+function enforcePayout() {
+  if (!userWantsMining || !connection.address || !['connecting', 'waiting_for_job', 'mining'].includes(state.state)) return true;
+  try { assertExpectedPayout(connection.address, latestPayout, client.hello?.mode); return true; }
+  catch (e) {
+    userWantsMining = false;
+    log('err', `payout check failed: ${e.message}`);
+    if (state.dispatch('upstream_closed', { reason: e.message })) { coord.stop(); stats.stop(); onStateChanged(); }
+    if (client.state === 'open') client.stop().catch(() => {});
+    return false;
+  }
 }
 client.on('error', (e) => {
   log('err', `bridge error ${e.code}: ${e.message}`);
@@ -126,6 +146,9 @@ $('btn-start').addEventListener('click', startMining);
 $('btn-stop').addEventListener('click', stopAll);
 
 async function startMining() {
+  if ($('endpoint-input').value.trim() !== connection.endpoint || $('mining-address-input').value.trim() !== connection.address) {
+    if (!applyConnection()) return;
+  }
   if (!caps.workers || !caps.bigint) { log('err', 'this browser lacks Web Workers or BigInt — cannot mine'); return; }
   if (selftestFailed) { log('err', 'Eaglesong self-test failed in a worker — refusing to mine'); return; }
   if (!state.dispatch('start_clicked')) return;
@@ -137,8 +160,12 @@ async function startMining() {
       log('info', `${info.workers} CPU worker(s) ready, self-test ${info.selftest ? 'PASS' : 'FAIL'}`);
       if (!info.selftest) throw new Error('Eaglesong self-test failed');
     }
-    if (client.state !== 'open') { client.connect(); await waitForOpen(8000); }
+    if (client.state !== 'open' || !client.hello) { client.connect(); await waitForOpen(8000); }
+    if (!userWantsMining || state.state !== 'connecting') throw new Error('start cancelled');
+    assertExpectedPayout(connection.address, latestPayout, client.hello?.mode);
     await client.start(`web-${(client.hello?.sessionId ?? 'x').slice(0, 6)}`);
+    if (!userWantsMining || !['connecting', 'waiting_for_job', 'mining'].includes(state.state)) return;
+    if (!enforcePayout()) return;
     calibrationHashes = 0; calibrationAt = performance.now();
     stats.start();
     if (state.dispatch('session_active')) onStateChanged();
@@ -176,6 +203,8 @@ function onStateChanged() {
   $('state-label').textContent = label; $('state-label').dataset.state = s; $('state-detail').textContent = detail;
   $('btn-start').disabled = !(s === 'idle' || s === 'stopped' || s === 'error');
   $('btn-stop').disabled = !(s === 'connecting' || s === 'waiting_for_job' || s === 'mining');
+  $('btn-save-connection').disabled = !['idle', 'stopped', 'error'].includes(s);
+  $('btn-reset-connection').disabled = !['idle', 'stopped', 'error'].includes(s);
   $('badge-backend').textContent = s === 'mining' && !pausedByVisibility ? `Backend: CPU-JS ×${coord.snapshot().workers}` : 'Backend: idle';
   if (s === 'mining' && !pausedByVisibility) coord.start(); else if (s !== 'mining') coord.stop();
 }
@@ -196,6 +225,41 @@ function renderShares() {
 }
 
 // ── settings ────────────────────────────────────────────────────────────────
+$('connection-form').addEventListener('submit', (event) => { event.preventDefault(); applyConnection(); });
+$('btn-reset-connection').addEventListener('click', () => {
+  $('endpoint-input').value = CONFIG.bridgeUrl;
+  $('mining-address-input').value = '';
+  if (applyConnection()) { try { localStorage.removeItem(CONNECTION_KEY); } catch { /* private mode */ } }
+});
+function applyConnection() {
+  const feedback = $('connection-feedback');
+  $('endpoint-input').removeAttribute('aria-invalid');
+  $('mining-address-input').removeAttribute('aria-invalid');
+  if (!['idle', 'stopped', 'error'].includes(state.state)) {
+    feedback.textContent = 'Stop mining before changing the connection.';
+    feedback.className = 'help warn';
+    return false;
+  }
+  let endpoint, address;
+  try { endpoint = normalizeEndpoint($('endpoint-input').value, location.protocol); }
+  catch (e) { $('endpoint-input').setAttribute('aria-invalid', 'true'); feedback.textContent = e.message; feedback.className = 'help warn'; return false; }
+  try { address = normalizeMiningAddress($('mining-address-input').value); }
+  catch (e) { $('mining-address-input').setAttribute('aria-invalid', 'true'); feedback.textContent = e.message; feedback.className = 'help warn'; return false; }
+  client.disconnect();
+  client.setEndpoint(endpoint);
+  connection = { endpoint, address };
+  latestPayout = null;
+  showPayout(null);
+  $('session-id').textContent = '—';
+  $('bridge-url').textContent = endpoint;
+  $('endpoint-input').value = endpoint;
+  $('mining-address-input').value = address;
+  setConn('Disconnected', 'badge-neutral');
+  try { localStorage.setItem(CONNECTION_KEY, JSON.stringify(connection)); } catch { /* private mode */ }
+  feedback.textContent = 'Connection saved. Press Start to connect and check payout.';
+  feedback.className = 'help muted';
+  return true;
+}
 $('workers').addEventListener('input', () => { syncOutputs(); savePrefs(); });
 $('workers').addEventListener('change', async () => { await coord.setWorkerCount(Number($('workers').value)); if (state.state === 'mining') $('badge-backend').textContent = `Backend: CPU-JS ×${coord.snapshot().workers}`; });
 $('intensity').addEventListener('input', () => { syncOutputs(); coord.setIntensity(Number($('intensity').value)); savePrefs(); });
@@ -258,7 +322,7 @@ $('btn-copy-diag').addEventListener('click', () => {
   const redact = $('redact').checked;
   const red = (s) => (redact && typeof s === 'string' ? s.replace(/[0-9a-f]{16,}/gi, (m) => m.slice(0, 4) + '…') : s);
   const report = {
-    app: { version: CONFIG.version, buildHash: CONFIG.buildHash, protocol: client.hello?.protocol ?? null, bridge: redact ? '[redacted]' : CONFIG.bridgeUrl },
+    app: { version: CONFIG.version, buildHash: CONFIG.buildHash, protocol: client.hello?.protocol ?? null, bridge: redact ? '[redacted]' : connection.endpoint },
     browser: { ua: navigator.userAgent, ...caps },
     state: { state: state.state, reason: state.reason, pausedByVisibility, coordinator: { ...coord.snapshot(), cursor: coord.snapshot().cursor.toString() } },
     stats: stats.snapshot(),
@@ -290,10 +354,18 @@ function createWorker() {
 }
 function waitForOpen(ms) {
   return new Promise((resolve, reject) => {
-    if (client.state === 'open') return resolve();
+    if (client.hello) return resolve();
     const timer = setTimeout(() => { off(); reject(new Error('bridge connection timeout')); }, ms);
     const off = client.on('hello', () => { clearTimeout(timer); off(); resolve(); });
   });
+}
+function loadConnection() {
+  const fallback = { endpoint: normalizeEndpoint(CONFIG.bridgeUrl, location.protocol), address: '' };
+  try {
+    const raw = JSON.parse(localStorage.getItem(CONNECTION_KEY) ?? 'null');
+    if (!raw || typeof raw !== 'object') return fallback;
+    return { endpoint: normalizeEndpoint(raw.endpoint, location.protocol), address: normalizeMiningAddress(raw.address ?? '') };
+  } catch { return fallback; }
 }
 function loadPrefs() { try { const j = JSON.parse(localStorage.getItem(PREF_KEY) ?? '{}'); return j && typeof j === 'object' ? j : {}; } catch { return {}; } }
 function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify({ workers: Number($('workers').value), intensity: Number($('intensity').value), keepBackground: $('keep-background').checked })); } catch { /* private mode */ } }

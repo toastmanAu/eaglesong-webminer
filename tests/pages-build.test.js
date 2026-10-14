@@ -16,6 +16,7 @@ test('Pages build requires an explicit secure public bridge URL', async () => {
     await buildPages({ bridgeUrl: 'wss://bridge.example.org', out });
     const html = readFileSync(out, 'utf8');
     assert.match(html, /wss:\/\/bridge\.example\.org/);
+    assert.match(html, /connect-src wss:;/, 'custom WSS endpoints must pass the page CSP');
     assert.match(html, /Development chain demo\. Blocks found here have no monetary value/);
     assert.doesNotMatch(html, /ws:\/\/127\.0\.0\.1:8788/);
   } finally { rmSync(dir, { recursive: true, force: true }); }

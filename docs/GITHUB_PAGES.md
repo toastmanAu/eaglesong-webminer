@@ -17,7 +17,9 @@ Use a **separate** solo proxy instance for the web bridge on port 3334. Keep the
 2. In repository Settings → Secrets and variables → Actions → Variables, create `PAGES_BRIDGE_URL` with the public `wss://` origin. This is a public URL, not a secret.
 3. In Settings → Pages, choose **GitHub Actions** as the build and deployment source.
 4. Push `main` or run the `GitHub Pages` workflow manually. The workflow runs tests, both public audits, and `verify:live` before publishing `dist/index.html`. The live gate opens the public WSS bridge with the Pages Origin, requires a fresh verified payout and healthy node, hashes a bounded real job, submits a share, requires a proxy ACK, and sends Stop. After deployment, Chromium opens the actual Pages URL and verifies idle, a real ACKed browser share, Stop, and idle after reload. A failed post-deploy gate fails the workflow and requires repair; it does not undo the already published artifact. `local_accepted` and `block_candidate` do not mean a confirmed block.
-5. Open the deployed HTTPS page. Confirm its bridge badge connects, the payout address is read-only and verified from fresh proxy stats, Start produces independently checked shares, Stop halts hashing, and reload stays idle.
+5. Open the deployed HTTPS page. Confirm its bridge badge connects, the actual payout is verified from fresh proxy stats, Start produces independently checked shares, Stop halts hashing, and reload stays idle.
+
+Visitors can enter a custom `wss://` bridge endpoint and an optional CKB mining address in the Connection card. The browser saves these settings locally. The bridge must implement `ckb-128nonce-v1` and allow the Pages origin (`https://OWNER.github.io`). If an address is entered, the browser requires a matching node-verified solo payout before it sends Start, and stops if verification changes. The field does not reconfigure a shared bridge or its node; each different payout needs a compatible endpoint backed by a node block assembler configured for that address. Plaintext `ws://` is allowed only for local development on an HTTP page.
 
 ## Current deployment
 

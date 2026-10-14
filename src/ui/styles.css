@@ -86,6 +86,10 @@ main { display: grid; gap: 16px; max-width: 1100px; margin: 0 auto; }
 .field label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; }
 .field input[type="range"] { width: 100%; min-height: 44px; accent-color: var(--accent); }
 .field select { font: inherit; width: 100%; min-height: 44px; padding: 8px 12px; border-radius: var(--radius); border: 1.5px solid var(--line); background: var(--bg-raised); color: var(--text); }
+.field input[type="url"], .field input[type="text"] { font: inherit; width: 100%; min-height: 44px; padding: 8px 12px; border-radius: var(--radius); border: 1.5px solid var(--line); background: var(--bg-raised); color: var(--text); }
+.field input[aria-invalid="true"] { border-color: var(--err); }
+#connection-form { margin-bottom: 24px; }
+#connection-form .row { margin-bottom: 8px; }
 .field-check { display: flex; gap: 12px; align-items: flex-start; }
 .field-check input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--accent); flex: none; }
 .field-check label { margin: 0; font-weight: 400; }

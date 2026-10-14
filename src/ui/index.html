@@ -50,7 +50,7 @@
         <dt>Rewards go to</dt>
         <dd><code id="payout-address" class="addr">—</code> <button class="btn btn-ghost btn-sm" id="btn-copy-addr" type="button" aria-label="Copy payout address">Copy</button></dd>
         <dt>Source</dt>
-        <dd id="payout-source" class="muted">Server-configured block assembler address. You cannot change it here; a typed address would not redirect rewards.</dd>
+        <dd id="payout-source" class="muted">The endpoint reports its block assembler address.</dd>
         <dt>Verified on node</dt>
         <dd><span class="badge badge-neutral" id="payout-verified">unverified</span></dd>
       </dl>
@@ -58,6 +58,20 @@
 
     <section class="card" aria-labelledby="h-conn">
       <h2 id="h-conn">Connection</h2>
+      <form id="connection-form">
+        <div class="field">
+          <label for="endpoint-input">Bridge WebSocket endpoint</label>
+          <input id="endpoint-input" type="url" inputmode="url" spellcheck="false" autocomplete="url" required>
+          <p class="help muted">Use a compatible bridge over wss://. Local ws:// is available on HTTP development pages.</p>
+        </div>
+        <div class="field">
+          <label for="mining-address-input">My mining address (optional)</label>
+          <input id="mining-address-input" type="text" spellcheck="false" autocomplete="off" placeholder="ckb1… or ckt1…">
+          <p class="help muted">Start is allowed only if this matches the endpoint’s node-verified solo payout. Entering an address does not change the node’s payout.</p>
+        </div>
+        <div class="row"><button class="btn btn-secondary" id="btn-save-connection" type="submit">Save connection</button><button class="btn btn-ghost" id="btn-reset-connection" type="button">Use default endpoint</button></div>
+        <p class="help" id="connection-feedback" role="status" aria-live="polite"></p>
+      </form>
       <dl class="kv kv-grid">
         <dt>Bridge</dt><dd><code id="bridge-url">—</code></dd>
         <dt>Session</dt><dd><code id="session-id">—</code></dd>

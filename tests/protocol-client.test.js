@@ -44,6 +44,18 @@ const defaultScript = (ws, msg) => {
   if (msg.type === 'ping') ws.send(JSON.stringify({ v: 1, type: 'pong', requestId: msg.requestId }));
 };
 
+test('endpoint can change while disconnected and cannot change during a session', async () => {
+  await withFakeBridge(defaultScript, async ({ make, url }) => {
+    const c = make({ url: 'ws://127.0.0.1:1' });
+    c.setEndpoint(url);
+    c.connect(); await once(c, 'hello');
+    assert.throws(() => c.setEndpoint('ws://127.0.0.1:2'), /disconnect|session/i);
+    c.disconnect();
+    assert.equal(c.hello, null);
+    c.setEndpoint('ws://127.0.0.1:2');
+  });
+});
+
 test('connect → hello is parsed and the client sends its own hello with capabilities; state becomes open', async () => {
   const seen = [];
   await withFakeBridge((ws, msg) => { seen.push(msg); defaultScript(ws, msg); }, async ({ make }) => {

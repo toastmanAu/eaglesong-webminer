@@ -9,9 +9,9 @@
 | Bridge availability | floods | per-IP/global connection caps, 16 KB frame cap (`ws` `maxPayload` → close 1009), per-session submit rate limit (block candidates exempt so a real solution is never dropped), heartbeat ping/pong |
 | Share accounting | forged/replayed shares | bridge recomputes Eaglesong, checks the session prefix, keeps a duplicate set keyed `{jobId, nonce}`, judges by generation snapshot; unknown generations are **rejected**, never ACKed |
 | Browser trust | asserted hash/difficulty | `hashHex` is diagnostic; acceptance depends only on server recomputation |
-| Payout | user believes a typed address pays them | the UI shows a read-only address; with `stratum.statsPort` set, the bridge reads the proxy's node-derived address and verifies only healthy fresh templates without payout drift. Missing or stale stats revoke verification. |
+| Payout | user believes a typed address pays them | the UI shows the endpoint-reported payout. An optional entered address is checked against a node-verified solo payout before Start and on updates; it cannot redirect rewards. The bridge verifies only healthy fresh templates without payout drift. |
 | Covert mining | mining without consent | nothing hashes before Start; reload/reconnect never auto-starts; hidden tab pauses by default; `pagehide` stops workers and the upstream session |
-| Supply chain | third-party runtime code | `dist/index.html` is self-contained; CSP meta `default-src 'none'` with `connect-src` pinned to the bridge |
+| Supply chain | third-party runtime code | `dist/index.html` is self-contained; CSP meta `default-src 'none'`. `connect-src wss:` allows user-selected secure bridge endpoints on the public page. Browser users must trust the endpoint they choose; its payout verification is an assertion by that endpoint, not independent browser access to a CKB node. |
 | Secrets | leakage in the page/logs | no pool credentials, keys or internal hostnames in `dist/`; the bridge log redacts browser IPs to `/16`; `/healthz` exposes counts only |
 
 ## Public deployment (Deployment B) checklist

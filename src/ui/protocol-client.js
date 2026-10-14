@@ -32,6 +32,7 @@ export function createProtocolClient(opts) {
     requestTimeoutMs = 15000, reconnect = { baseMs: 1000, maxMs: 30000 }, now = Date.now,
   } = opts;
   if (typeof url !== 'string' || !/^wss?:\/\//.test(url)) throw new RangeError('bridge url must be ws:// or wss://');
+  let endpoint = url;
   const em = createEmitter();
   let ws = null;
   let state = 'disconnected';
@@ -140,7 +141,7 @@ export function createProtocolClient(opts) {
     if (!wantConnected || ws) return;
     state = 'connecting';
     let sock;
-    try { sock = new WebSocketImpl(url); } catch (e) { em.emit('error', { code: 'WS_CONSTRUCT', message: e.message }); scheduleReconnect('construct'); return; }
+    try { sock = new WebSocketImpl(endpoint); } catch (e) { em.emit('error', { code: 'WS_CONSTRUCT', message: e.message }); scheduleReconnect('construct'); return; }
     ws = sock;
     sock.onopen = () => { if (ws !== sock) return; state = 'open'; attempt = 0; em.emit('open'); try { send({ v: 1, type: 'hello', client: clientName, capabilities: [...capabilities] }); } catch { /* closing */ } };
     sock.onmessage = (ev) => { if (ws === sock) onFrame(typeof ev.data === 'string' ? ev.data : String(ev.data)); };
@@ -160,11 +161,18 @@ export function createProtocolClient(opts) {
     get state() { return state; },
     get hello() { return hello; },
     get currentJob() { return currentJob; },
+    get endpoint() { return endpoint; },
+    setEndpoint(next) {
+      if (wantConnected || ws || state !== 'disconnected') throw new Error('Disconnect the current session before changing endpoint');
+      if (typeof next !== 'string' || !/^wss?:\/\//.test(next)) throw new RangeError('bridge url must be ws:// or wss://');
+      endpoint = next; hello = null; currentJob = null;
+    },
     connect() { wantConnected = true; open(); },
     disconnect() {
       wantConnected = false;
       if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
       const s = ws; ws = null; state = 'disconnected';
+      hello = null; currentJob = null;
       failAllPending('disconnected');
       if (s) { try { s.onclose = null; s.close(1000, 'client disconnect'); } catch { /* ignore */ } }
     },
